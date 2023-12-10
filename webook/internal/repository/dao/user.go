@@ -42,3 +42,12 @@ func NewUserDao(db *gorm.DB) *UserDao {
 		db: db,
 	}
 }
+
+func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error
+	if err != nil {
+		return User{}, err
+	}
+	return u, nil
+}
