@@ -42,5 +42,26 @@ func (repo *UserRepository) toDomain(u dao.User) domain.User {
 		Id:       u.Id,
 		Email:    u.Email,
 		Password: u.Password,
+		Nickname: u.Nickname,
+		Phone:    u.Phone,
+		About:    u.About,
+		Birthday: u.Birthday,
 	}
+}
+
+func (repo *UserRepository) UpdateUserInfo(ctx context.Context, u domain.User) error {
+	return repo.dao.Update(ctx, dao.User{
+		Id:       u.Id,
+		Nickname: u.Nickname,
+		Birthday: u.Birthday,
+		About:    u.About,
+	})
+}
+
+func (repo *UserRepository) GetProfileById(ctx context.Context, userid int64) (domain.User, error) {
+	u, err := repo.dao.GetProfileById(ctx, userid)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return repo.toDomain(u), nil
 }

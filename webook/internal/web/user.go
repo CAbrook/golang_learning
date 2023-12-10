@@ -114,11 +114,60 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Profile(ctx *gin.Context) {
+	// type Profile struct {
+	// 	Email    string `json:"email"`
+	// 	Phone    string `json:"phone"`
+	// 	Nickname string `json:"nickname"`
+	// 	Birthday string `json:"birthday"`
+	// 	AboutMe  string `json:"aboutMe"`
+	// }
+	sess := sessions.Default(ctx)
+	userId := sess.Get("userid")
+	u, err := h.svc.GetProfileById(ctx, userId.(int64))
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{"code": 1, "msg": "system error"})
+		return
+	}
+	userProfile := gin.H{
+		"Email":    u.Email,
+		"Phone":    u.Phone,
+		"Nickname": u.Nickname,
+		"Birthday": u.Birthday,
+		"AboutMe":  u.About,
+	}
 
+	// 设置响应头部为JSON格式
+	ctx.Header("Content-Type", "application/json")
+
+	// 返回JSON数据
+	ctx.JSON(http.StatusOK, userProfile)
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {
-
+	type EditReq struct {
+		Email    string `json:"email"`
+		Phone    string `json:"phone"`
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	var req EditReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	sess := sessions.Default(ctx)
+	userID := sess.Get("userid")
+	err := h.svc.UpdateUserInfo(ctx, domain.User{
+		Id:       userID.(int64),
+		Nickname: req.Nickname,
+		Birthday: req.Birthday,
+		About:    req.AboutMe,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{"code": 1, "msg": "Edit error"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 0, "msg": "Edit successful"})
 }
 
 func NewUserHandler(svc *service.UserService) *UserHandler {

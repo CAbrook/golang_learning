@@ -48,3 +48,11 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
 	}
 	return u, nil
 }
+
+func (svc *UserService) UpdateUserInfo(ctx context.Context, u domain.User) error {
+	return svc.repo.UpdateUserInfo(ctx, u)
+}
+
+func (svc *UserService) GetProfileById(ctx context.Context, userId int64) (domain.User, error) {
+	return svc.repo.GetProfileById(ctx, userId)
+}

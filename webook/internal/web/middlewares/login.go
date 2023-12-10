@@ -21,6 +21,7 @@ func (m *LoginMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		if sess.Get("userid") == nil {
 			//中断不要往后执行，不执行后面的业务逻辑
 			ctx.AbortWithStatus(http.StatusUnauthorized)
+			println("check not pass")
 			return
 		}
 	}
