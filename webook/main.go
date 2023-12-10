@@ -8,7 +8,10 @@ import (
 	"github.com/CAbrook/golang_learning/internal/repository/dao"
 	"github.com/CAbrook/golang_learning/internal/service"
 	"github.com/CAbrook/golang_learning/internal/web"
+	"github.com/CAbrook/golang_learning/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -37,6 +40,7 @@ func initDB() *gorm.DB {
 
 func initWebServer() *gin.Engine {
 	server := gin.Default()
+
 	server.Use(cors.New(cors.Config{
 		AllowCredentials: true,
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
@@ -50,6 +54,11 @@ func initWebServer() *gin.Engine {
 	}), func(ctx *gin.Context) {
 		println("this is middleware")
 	})
+
+	login := &middlewares.LoginMiddlewareBuilder{}
+	//存储数据 直接存cookie
+	store := cookie.NewStore([]byte("secret"))
+	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 	return server
 }
 

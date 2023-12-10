@@ -2,13 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/CAbrook/golang_learning/internal/domain"
 	"github.com/CAbrook/golang_learning/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var ErrDuplicateEmail = repository.ErrDuplicateEmail
+var (
+	ErrDuplicateEmail        = repository.ErrDuplicateEmail
+	ErrInvalidUserOrPassword = errors.New("user is not exit or password error")
+)
 
 type UserService struct {
 	repo *repository.UserRepository
@@ -31,13 +35,16 @@ func (svc *UserService) Signup(ctx context.Context, u domain.User) error {
 
 func (svc *UserService) Login(ctx context.Context, email string, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
+	if err == repository.ErrUserNotFound {
+		return domain.User{}, ErrInvalidUserOrPassword
+	}
 	if err != nil {
 		return domain.User{}, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
 	return u, nil
 }

@@ -9,7 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var ErrDuplicateEmail = errors.New("email euplicate")
+var (
+	ErrDuplicateEmail = errors.New("email euplicate")
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
 
 type UserDao struct {
 	db *gorm.DB

@@ -7,7 +7,10 @@ import (
 	"github.com/CAbrook/golang_learning/internal/repository/dao"
 )
 
-var ErrDuplicateEmail = dao.ErrDuplicateEmail
+var (
+	ErrDuplicateEmail = dao.ErrDuplicateEmail
+	ErrUserNotFound   = dao.ErrRecordNotFound
+)
 
 type UserRepository struct {
 	dao *dao.UserDao

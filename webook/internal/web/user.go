@@ -6,6 +6,7 @@ import (
 	"github.com/CAbrook/golang_learning/internal/domain"
 	"github.com/CAbrook/golang_learning/internal/service"
 	regexp "github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 
 	"github.com/gin-gonic/gin"
 )
@@ -94,11 +95,22 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	_, err := h.svc.Login(ctx, req.Email, req.Password)
-	if err != nil {
+	u, err := h.svc.Login(ctx, req.Email, req.Password)
+	switch err {
+	case nil:
+		sess := sessions.Default(ctx)
+		sess.Set("userid", u.Id)
+		err = sess.Save()
+		if err != nil {
+			ctx.String(http.StatusOK, "system error")
+			return
+		}
+		ctx.String(http.StatusOK, "login success")
+	case service.ErrInvalidUserOrPassword:
+		ctx.String(http.StatusOK, "username or password error")
+	default:
 		ctx.String(http.StatusOK, "system error")
 	}
-	ctx.String(http.StatusOK, "login success")
 }
 
 func (h *UserHandler) Profile(ctx *gin.Context) {
