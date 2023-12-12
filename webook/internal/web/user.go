@@ -100,6 +100,9 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	case nil:
 		sess := sessions.Default(ctx)
 		sess.Set("userid", u.Id)
+		sess.Options(sessions.Options{
+			MaxAge: 600,
+		})
 		err = sess.Save()
 		if err != nil {
 			ctx.String(http.StatusOK, "system error")
