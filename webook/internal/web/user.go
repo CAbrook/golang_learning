@@ -2,11 +2,13 @@ package web
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/CAbrook/golang_learning/internal/domain"
 	"github.com/CAbrook/golang_learning/internal/service"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +22,13 @@ const (
 	bizLogin             = "login"
 )
 
+type UserClaims struct {
+	jwt.RegisteredClaims
+	Uid int64
+}
+
+var JWTKey = []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ7")
+
 type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
@@ -30,6 +39,8 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("users")
 	ug.POST("/signup", h.SignUp)
 	ug.POST("/login", h.Login)
+	//todo 此处需要把接口全部换成JWT实现
+	//ug.POST("/login", h.LoginJWT)
 	ug.GET("/profile", h.Profile)
 	ug.POST("/edit", h.Edit)
 }
@@ -86,6 +97,40 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	}
 }
 
+func (h *UserHandler) LoginJWT(ctx *gin.Context) {
+	type Req struct {
+		Email    string `json:"email"`
+		Password string `json:password`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	u, err := h.svc.Login(ctx, req.Email, req.Password)
+	switch err {
+	case nil:
+		uc := UserClaims{
+			Uid: u.Id,
+			RegisteredClaims: jwt.RegisteredClaims{
+				//30分钟过期
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+		tokenStr, err := token.SignedString(JWTKey)
+		if err != nil {
+			ctx.String(http.StatusOK, "system error")
+		}
+		//自定义头部
+		ctx.Header("x-jwt-token", tokenStr)
+		ctx.String(http.StatusOK, "login success")
+	case service.ErrInvalidUserOrPassword:
+		ctx.String(http.StatusOK, "username or password error")
+	default:
+		ctx.String(http.StatusOK, "system error")
+	}
+}
+
 func (h *UserHandler) Login(ctx *gin.Context) {
 	type Req struct {
 		Email    string `json:"email"`
@@ -124,6 +169,7 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 	// 	Birthday string `json:"birthday"`
 	// 	AboutMe  string `json:"aboutMe"`
 	// }
+	//uc := ctx.MustGet("user").(UserClaims)
 	sess := sessions.Default(ctx)
 	userId := sess.Get("userid")
 	u, err := h.svc.GetProfileById(ctx, userId.(int64))

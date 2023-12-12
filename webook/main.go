@@ -43,7 +43,9 @@ func initWebServer() *gin.Engine {
 
 	server.Use(cors.New(cors.Config{
 		AllowCredentials: true,
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"}, //通过Authorization头带token
+		//这个是允许前端访问后端响应中带的头部
+		ExposeHeaders: []string{"x-jwt-token"},
 		AllowOriginFunc: func(origin string) bool {
 			if strings.Contains(origin, "localhost") {
 				return true
@@ -54,7 +56,26 @@ func initWebServer() *gin.Engine {
 	}), func(ctx *gin.Context) {
 		println("this is middleware")
 	})
+	//todo 需要配套使用，此处换成JWT之后Login等接口都需要换成JWT实现
+	//useJWT(server)
+	useSession(server)
+	return server
+}
 
+func InitUserHandler(db *gorm.DB, server *gin.Engine) {
+	ud := dao.NewUserDao(db)
+	ur := repository.NewUserRepository(ud)
+	us := service.NewUserService(ur)
+	hdl := web.NewUserHandler(us)
+	hdl.RegisterRoutes(server)
+}
+
+func useJWT(server *gin.Engine) {
+	login := middlewares.LoginJWTMiddlewareBuilder{}
+	server.Use(login.CheckLogin())
+}
+
+func useSession(server *gin.Engine) {
 	login := &middlewares.LoginMiddlewareBuilder{}
 	//存储数据 直接存cookie
 	//store := cookie.NewStore([]byte("secret"))
@@ -68,13 +89,4 @@ func initWebServer() *gin.Engine {
 		panic(err)
 	}
 	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
-	return server
-}
-
-func InitUserHandler(db *gorm.DB, server *gin.Engine) {
-	ud := dao.NewUserDao(db)
-	ur := repository.NewUserRepository(ud)
-	us := service.NewUserService(ur)
-	hdl := web.NewUserHandler(us)
-	hdl.RegisterRoutes(server)
 }
