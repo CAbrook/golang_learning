@@ -11,7 +11,7 @@ import (
 	"github.com/CAbrook/golang_learning/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -57,7 +57,16 @@ func initWebServer() *gin.Engine {
 
 	login := &middlewares.LoginMiddlewareBuilder{}
 	//存储数据 直接存cookie
-	store := cookie.NewStore([]byte("secret"))
+	//store := cookie.NewStore([]byte("secret"))
+	//基于内存实现
+	// store := redis.NewStore([]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"),
+	// 	[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
+	//两个key分别时指身份认证和数据加密（二者加上权限控制就是信息安全中三个核心概念）
+	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+		[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"), []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
+	if err != nil {
+		panic(err)
+	}
 	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 	return server
 }
