@@ -49,6 +49,12 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+		if uc.UserAgent != ctx.GetHeader("User-Agent") {
+			//后期告警时候要埋点
+			println("输出埋点信息")
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		//剩余过期时间小于50s刷新（1min过期，每10s刷新一次）
 		if expireTime.Sub(time.Now()) < time.Second*50 {
 			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))

@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-record-service
+spec:
+# 副本数量
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webook-record
+  template:
+    metadata:
+      labels:
+        app: webook-record
+        #这个是Deployment管理的pod的模板
+    spec:
+    # pod 中运行的所有的contain
+      containers:
+        - name: webook-record
+          image: zzlemi/webook:v0.0.1
+          ports:
+            - containerPort: 8080

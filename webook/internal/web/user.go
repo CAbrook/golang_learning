@@ -24,7 +24,8 @@ const (
 
 type UserClaims struct {
 	jwt.RegisteredClaims
-	Uid int64
+	Uid       int64
+	UserAgent string
 }
 
 var JWTKey = []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ7")
@@ -115,6 +116,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 				//30分钟过期
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 			},
+			UserAgent: ctx.GetHeader("User-Agent"),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
 		tokenStr, err := token.SignedString(JWTKey)
