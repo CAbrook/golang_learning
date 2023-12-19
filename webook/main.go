@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -19,9 +20,14 @@ import (
 
 // npm run dev
 func main() {
-	db := initDB()
-	server := initWebServer()
-	InitUserHandler(db, server)
+	// db := initDB()
+	// server := initWebServer()
+	// InitUserHandler(db, server)
+	// server.Run(":8080")
+	server := gin.Default()
+	server.GET("/hello", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "hellow k8s env")
+	})
 	server.Run(":8080")
 }
 
