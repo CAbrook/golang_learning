@@ -1,10 +1,9 @@
 package main
 
 import (
-	"net/http"
-	"strings"
 	"time"
 
+	"github.com/CAbrook/golang_learning/config"
 	"github.com/CAbrook/golang_learning/internal/repository"
 	"github.com/CAbrook/golang_learning/internal/repository/dao"
 	"github.com/CAbrook/golang_learning/internal/service"
@@ -20,20 +19,24 @@ import (
 
 // npm run dev
 func main() {
-	// db := initDB()
-	// server := initWebServer()
-	// InitUserHandler(db, server)
+	db := initDB()
+	server := initWebServer()
+	InitUserHandler(db, server)
+	server.Run(":8081")
+
+	// test nginx
+	// server := gin.Default()
+	// server.GET("/hello", func(ctx *gin.Context) {
+	// 	ctx.String(http.StatusOK, "hellow k8s env")
+	// })
 	// server.Run(":8080")
-	server := gin.Default()
-	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "hellow k8s env")
-	})
-	server.Run(":8080")
 }
 
 func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:13316)/webook"))
+	//"root:root@tcp(localhost:13316)/webook"
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
 	if err != nil {
+		println(config.Config.DB.DSN)
 		panic(err)
 	}
 	db.Debug()
@@ -52,13 +55,14 @@ func initWebServer() *gin.Engine {
 		AllowHeaders:     []string{"Content-Type", "Authorization"}, //通过Authorization头带token
 		//这个是允许前端访问后端响应中带的头部
 		ExposeHeaders: []string{"x-jwt-token"},
-		AllowOriginFunc: func(origin string) bool {
-			if strings.Contains(origin, "localhost") {
-				return true
-			}
-			return strings.Contains(origin, "xxx")
-		},
-		MaxAge: 12 * time.Hour,
+		// AllowOriginFunc: func(origin string) bool {
+		// 	if strings.Contains(origin, "localhost") {
+		// 		return true
+		// 	}
+		// 	return true
+		// },
+		AllowAllOrigins: true,
+		MaxAge:          12 * time.Hour,
 	}), func(ctx *gin.Context) {
 		println("this is middleware")
 	})
@@ -89,7 +93,7 @@ func useSession(server *gin.Engine) {
 	// store := redis.NewStore([]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"),
 	// 	[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
 	//两个key分别时指身份认证和数据加密（二者加上权限控制就是信息安全中三个核心概念）
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+	store, err := redis.NewStore(16, "tcp", config.Config.Redis.Addr, "",
 		[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"), []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
 	if err != nil {
 		panic(err)
