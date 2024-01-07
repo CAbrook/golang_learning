@@ -39,9 +39,9 @@ type UserHandler struct {
 func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("users")
 	ug.POST("/signup", h.SignUp)
-	ug.POST("/login", h.Login)
+	//ug.POST("/login", h.Login)
 	//todo 此处需要把接口全部换成JWT实现
-	//ug.POST("/login", h.LoginJWT)
+	ug.POST("/login", h.LoginJWT)
 	ug.GET("/profile", h.Profile)
 	ug.POST("/edit", h.Edit)
 }
@@ -171,10 +171,13 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 	// 	Birthday string `json:"birthday"`
 	// 	AboutMe  string `json:"aboutMe"`
 	// }
-	//uc := ctx.MustGet("user").(UserClaims)
-	sess := sessions.Default(ctx)
-	userId := sess.Get("userid")
-	u, err := h.svc.GetProfileById(ctx, userId.(int64))
+	// session 实现
+	//sess := sessions.Default(ctx)
+	//userId := sess.Get("userid")
+	// jwt 实现
+	uc := ctx.MustGet("user").(UserClaims)
+	userId := uc.Uid
+	u, err := h.svc.GetProfileById(ctx, userId)
 	if err != nil {
 		ctx.JSON(http.StatusOK, gin.H{"code": 1, "msg": "system error"})
 		return
@@ -206,10 +209,12 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	sess := sessions.Default(ctx)
-	userID := sess.Get("userid")
+	//sess := sessions.Default(ctx)
+	//userID := sess.Get("userid")
+	uc := ctx.MustGet("user").(UserClaims)
+	userID := uc.Uid
 	err := h.svc.UpdateUserInfo(ctx, domain.User{
-		Id:       userID.(int64),
+		Id:       userID,
 		Nickname: req.Nickname,
 		Birthday: req.Birthday,
 		About:    req.AboutMe,

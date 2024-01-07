@@ -14,6 +14,10 @@ type LoginJWTMiddlewareBuilder struct{}
 
 func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		path := ctx.Request.URL.Path
+		if path == "/users/signup" || path == "/users/login" {
+			return
+		}
 		//根据约定token在Authorization头部
 		// bearer
 		authCode := ctx.GetHeader("Authorization")
@@ -38,7 +42,7 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		if token.Valid {
+		if !token.Valid {
 			//解析出来可能是非法的或者过期的
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/CAbrook/golang_learning/config"
@@ -22,7 +23,7 @@ func main() {
 	db := initDB()
 	server := initWebServer()
 	InitUserHandler(db, server)
-	server.Run(":8081")
+	server.Run(":8080")
 
 	// test nginx
 	// server := gin.Default()
@@ -55,20 +56,19 @@ func initWebServer() *gin.Engine {
 		AllowHeaders:     []string{"Content-Type", "Authorization"}, //通过Authorization头带token
 		//这个是允许前端访问后端响应中带的头部
 		ExposeHeaders: []string{"x-jwt-token"},
-		// AllowOriginFunc: func(origin string) bool {
-		// 	if strings.Contains(origin, "localhost") {
-		// 		return true
-		// 	}
-		// 	return true
-		// },
-		AllowAllOrigins: true,
-		MaxAge:          12 * time.Hour,
+		AllowOriginFunc: func(origin string) bool {
+			if strings.Contains(origin, "localhost") {
+				return true
+			}
+			return true
+		},
+		MaxAge: 12 * time.Hour,
 	}), func(ctx *gin.Context) {
 		println("this is middleware")
 	})
 	//todo 需要配套使用，此处换成JWT之后Login等接口都需要换成JWT实现
-	//useJWT(server)
-	useSession(server)
+	useJWT(server)
+	//useSession(server)
 	return server
 }
 
