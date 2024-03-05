@@ -8,9 +8,15 @@ import (
 	"math/rand"
 )
 
+var ErrCodeSendTooMany = repository.ErrCodeVerifyTooMany
+
 type CodeService struct {
-	repo repository.CodeRepository
+	repo *repository.CodeRepository
 	sms  sms.Service
+}
+
+func NewCodeService(r *repository.CodeRepository, smsSvc sms.Service) *CodeService {
+	return &CodeService{repo: r, sms: smsSvc}
 }
 
 func (svc *CodeService) Send(ctx context.Context, biz, phone string) error {

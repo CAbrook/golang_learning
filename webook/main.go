@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/CAbrook/golang_learning/internal/repository/cache"
 	"strings"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 	"github.com/CAbrook/golang_learning/internal/web"
 	"github.com/CAbrook/golang_learning/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
+	//"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -22,7 +23,11 @@ import (
 func main() {
 	db := initDB()
 	server := initWebServer()
-	InitUserHandler(db, server)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
+	})
+	codeSvc := initCodeService(redisClient)
+	InitUserHandler(db, redisClient, codeSvc, server)
 	server.Run(":8080")
 
 	// test nginx
@@ -72,12 +77,20 @@ func initWebServer() *gin.Engine {
 	return server
 }
 
-func InitUserHandler(db *gorm.DB, server *gin.Engine) {
+func InitUserHandler(db *gorm.DB, redisClient redis.Cmdable, codeSvc *service.CodeService, server *gin.Engine) {
 	ud := dao.NewUserDao(db)
-	ur := repository.NewUserRepository(ud)
+	uc := cache.NewUserCache(redisClient)
+	ur := repository.NewUserRepository(ud, uc)
 	us := service.NewUserService(ur)
-	hdl := web.NewUserHandler(us)
+	hdl := web.NewUserHandler(us, codeSvc)
 	hdl.RegisterRoutes(server)
+}
+
+func initCodeService(redisClient redis.Cmdable) *service.CodeService {
+	cc := cache.NewCodeCache(redisClient)
+	crepo := repository.NewCodeRepository(cc)
+	// todo
+	return service.NewCodeService(crepo, nil)
 }
 
 func useJWT(server *gin.Engine) {
@@ -85,18 +98,18 @@ func useJWT(server *gin.Engine) {
 	server.Use(login.CheckLogin())
 }
 
-func useSession(server *gin.Engine) {
-	login := &middlewares.LoginMiddlewareBuilder{}
-	//存储数据 直接存cookie
-	//store := cookie.NewStore([]byte("secret"))
-	//基于内存实现
-	// store := redis.NewStore([]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"),
-	// 	[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
-	//两个key分别时指身份认证和数据加密（二者加上权限控制就是信息安全中三个核心概念）
-	store, err := redis.NewStore(16, "tcp", config.Config.Redis.Addr, "",
-		[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"), []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
-	if err != nil {
-		panic(err)
-	}
-	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
-}
+//func useSession(server *gin.Engine) {
+//	login := &middlewares.LoginMiddlewareBuilder{}
+//	//存储数据 直接存cookie
+//	store := cookie.NewStore([]byte("secret"))
+//	//基于内存实现
+//	// store := redis.NewStore([]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"),
+//	// 	[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
+//	//两个key分别时指身份认证和数据加密（二者加上权限控制就是信息安全中三个核心概念）
+//	store, err := redis.NewStore(16, "tcp", config.Config.Redis.Addr, "",
+//		[]byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ9"), []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ0"))
+//	if err != nil {
+//		panic(err)
+//	}
+//	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+//}

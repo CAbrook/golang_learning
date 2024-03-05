@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"errors"
-
 	"github.com/CAbrook/golang_learning/internal/domain"
 	"github.com/CAbrook/golang_learning/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrDuplicateEmail        = repository.ErrDuplicateEmail
+	ErrDuplicateUser         = repository.ErrDuplicateUser
 	ErrInvalidUserOrPassword = errors.New("user is not exit or password error")
 )
 
@@ -55,4 +54,21 @@ func (svc *UserService) UpdateUserInfo(ctx context.Context, u domain.User) error
 
 func (svc *UserService) GetProfileById(ctx context.Context, userId int64) (domain.User, error) {
 	return svc.repo.GetProfileById(ctx, userId)
+}
+
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if err != repository.ErrUserNotFound {
+		return u, err
+	}
+	// user not find, need registered
+	err = svc.repo.Create(ctx, domain.User{Phone: phone})
+	// 两种可能一种为唯一索引冲突（phone），另一种为err != nil
+	if err != nil && err != repository.ErrDuplicateUser {
+		return domain.User{}, err
+	}
+	// err == nil or user already exists
+	// 主从延迟 刚插入user 不一定能找到； 插入插的是主库，查询查的是从库
+	// 理论上来说此处要强制走主库
+	return svc.repo.FindByPhone(ctx, phone)
 }

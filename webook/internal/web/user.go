@@ -1,14 +1,13 @@
 package web
 
 import (
-	"net/http"
-	"time"
-
 	"github.com/CAbrook/golang_learning/internal/domain"
 	"github.com/CAbrook/golang_learning/internal/service"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/golang-jwt/jwt/v5"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +33,7 @@ type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
 	svc              *service.UserService
+	codeSvc          *service.CodeService
 }
 
 func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
@@ -44,6 +44,71 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login", h.LoginJWT)
 	ug.GET("/profile", h.Profile)
 	ug.POST("/edit", h.Edit)
+	// 手机验证码登录相关功能
+	ug.POST("/login_sms/code/send", h.SendSMSLoginCode)
+	ug.POST("/login_sms", h.LoginSMS)
+}
+
+func (h *UserHandler) LoginSMS(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "os error"})
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "code error please input again"})
+		return
+	}
+	u, err := h.svc.FindOrCreate(ctx, req.Phone)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "os error",
+		})
+		return
+	}
+	h.setJWTToken(ctx, u.Id)
+	ctx.JSON(http.StatusOK, Result{Msg: "login success"})
+}
+
+func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	if req.Phone == "" {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "please input phone number",
+		})
+		return
+	}
+	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
+	if err != nil {
+		switch err {
+		case nil:
+			ctx.JSON(http.StatusOK, Result{
+				Msg: "send success",
+			})
+		case service.ErrCodeSendTooMany:
+			ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "code send too many"})
+		default:
+			ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "os error"})
+		}
+		// todo add log
+	}
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {
@@ -91,7 +156,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	switch err {
 	case nil:
 		ctx.String(http.StatusOK, "sign up")
-	case service.ErrDuplicateEmail:
+	case service.ErrDuplicateUser:
 		ctx.String(http.StatusOK, "email duplicate")
 	default:
 		ctx.String(http.StatusOK, "system error")
@@ -110,27 +175,31 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch err {
 	case nil:
-		uc := UserClaims{
-			Uid: u.Id,
-			RegisteredClaims: jwt.RegisteredClaims{
-				//30分钟过期
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-			},
-			UserAgent: ctx.GetHeader("User-Agent"),
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-		tokenStr, err := token.SignedString(JWTKey)
-		if err != nil {
-			ctx.String(http.StatusOK, "system error")
-		}
-		//自定义头部
-		ctx.Header("x-jwt-token", tokenStr)
+		h.setJWTToken(ctx, u.Id)
 		ctx.String(http.StatusOK, "login success")
 	case service.ErrInvalidUserOrPassword:
 		ctx.String(http.StatusOK, "username or password error")
 	default:
 		ctx.String(http.StatusOK, "system error")
 	}
+}
+
+func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
+	uc := UserClaims{
+		Uid: uid,
+		RegisteredClaims: jwt.RegisteredClaims{
+			//30分钟过期
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+		},
+		UserAgent: ctx.GetHeader("User-Agent"),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+	tokenStr, err := token.SignedString(JWTKey)
+	if err != nil {
+		ctx.String(http.StatusOK, "system error")
+	}
+	//自定义头部
+	ctx.Header("x-jwt-token", tokenStr)
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
@@ -226,10 +295,11 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"code": 0, "msg": "Edit successful"})
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
 		svc:              svc,
+		codeSvc:          codeSvc,
 	}
 }
