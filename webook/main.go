@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/CAbrook/golang_learning/internal/repository/cache"
+	"github.com/CAbrook/golang_learning/internal/service/sms"
+	"github.com/CAbrook/golang_learning/internal/service/sms/localimpl"
 	"strings"
 	"time"
 
@@ -89,8 +91,12 @@ func InitUserHandler(db *gorm.DB, redisClient redis.Cmdable, codeSvc *service.Co
 func initCodeService(redisClient redis.Cmdable) *service.CodeService {
 	cc := cache.NewCodeCache(redisClient)
 	crepo := repository.NewCodeRepository(cc)
-	// todo
-	return service.NewCodeService(crepo, nil)
+	// todo mock smsService
+	return service.NewCodeService(crepo, initSms())
+}
+
+func initSms() sms.Service {
+	return localimpl.NewService()
 }
 
 func useJWT(server *gin.Engine) {
