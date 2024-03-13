@@ -12,7 +12,6 @@ import (
 	"github.com/CAbrook/golang_learning/internal/repository/dao"
 	"github.com/CAbrook/golang_learning/internal/service"
 	"github.com/CAbrook/golang_learning/internal/web"
-	"github.com/CAbrook/golang_learning/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
 	//"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
@@ -23,13 +22,15 @@ import (
 
 // npm run dev
 func main() {
-	db := initDB()
-	server := initWebServer()
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: config.Config.Redis.Addr,
-	})
-	codeSvc := initCodeService(redisClient)
-	InitUserHandler(db, redisClient, codeSvc, server)
+	//db := initDB()
+	//server := initWebServer()
+	//redisClient := redis.NewClient(&redis.Options{
+	//	Addr: config.Config.Redis.Addr,
+	//})
+	//codeSvc := initCodeService(redisClient)
+	//InitUserHandler(db, redisClient, codeSvc, server)
+
+	server := InitWebServer()
 	server.Run(":8080")
 
 	// test nginx
@@ -74,7 +75,7 @@ func initWebServer() *gin.Engine {
 		println("this is middleware")
 	})
 	//todo 需要配套使用，此处换成JWT之后Login等接口都需要换成JWT实现
-	useJWT(server)
+	//useJWT(server)
 	//useSession(server)
 	return server
 }
@@ -99,10 +100,10 @@ func initSms() sms.Service {
 	return localimpl.NewService()
 }
 
-func useJWT(server *gin.Engine) {
-	login := middlewares.LoginJWTMiddlewareBuilder{}
-	server.Use(login.CheckLogin())
-}
+//func useJWT(server *gin.Engine) {
+//	login := middlewares.LoginJWTMiddlewareBuilder{}
+//	server.Use(login.CheckLogin())
+//}
 
 //func useSession(server *gin.Engine) {
 //	login := &middlewares.LoginMiddlewareBuilder{}
