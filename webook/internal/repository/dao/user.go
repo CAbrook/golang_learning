@@ -15,7 +15,16 @@ var (
 	ErrRecordNotFound = gorm.ErrRecordNotFound
 )
 
-type UserDao struct {
+type UserDao interface {
+	Insert(ctx context.Context, u User) error
+	FindByEmail(ctx context.Context, email string) (User, error)
+	Update(ctx context.Context, u User) error
+	FindById(ctx context.Context, id int64) (User, error)
+	FindByPhone(ctx context.Context, phone string) (User, error)
+	GetProfileById(ctx context.Context, userId int64) (User, error)
+}
+
+type GormUserDao struct {
 	db *gorm.DB
 }
 
@@ -32,7 +41,7 @@ type User struct {
 	Utime    int64
 }
 
-func (dao *UserDao) Insert(ctx context.Context, u User) error {
+func (dao *GormUserDao) Insert(ctx context.Context, u User) error {
 	now := time.Now().UnixMilli()
 	u.Ctime = now
 	u.Utime = now
@@ -46,13 +55,13 @@ func (dao *UserDao) Insert(ctx context.Context, u User) error {
 	return err
 }
 
-func NewUserDao(db *gorm.DB) *UserDao {
-	return &UserDao{
+func NewUserDao(db *gorm.DB) UserDao {
+	return &GormUserDao{
 		db: db,
 	}
 }
 
-func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error) {
+func (dao *GormUserDao) FindByEmail(ctx context.Context, email string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error
 	if err != nil {
@@ -61,7 +70,7 @@ func (dao *UserDao) FindByEmail(ctx context.Context, email string) (User, error)
 	return u, nil
 }
 
-func (dao *UserDao) Update(ctx context.Context, u User) error {
+func (dao *GormUserDao) Update(ctx context.Context, u User) error {
 	now := time.Now().UnixMilli()
 	u.Utime = now
 	return dao.db.WithContext(ctx).Model(&User{}).Where("id = ?", u.Id).
@@ -71,7 +80,7 @@ func (dao *UserDao) Update(ctx context.Context, u User) error {
 			"utime":    u.Utime}).Error
 }
 
-func (dao *UserDao) GetProfileById(ctx context.Context, userId int64) (User, error) {
+func (dao *GormUserDao) GetProfileById(ctx context.Context, userId int64) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("id=?", userId).First(&u).Error
 	if err != nil {
@@ -80,7 +89,7 @@ func (dao *UserDao) GetProfileById(ctx context.Context, userId int64) (User, err
 	return u, nil
 }
 
-func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
+func (dao *GormUserDao) FindById(ctx context.Context, id int64) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("id=?", id).First(&u).Error
 	if err != nil {
@@ -89,7 +98,7 @@ func (dao *UserDao) FindById(ctx context.Context, id int64) (User, error) {
 	return u, nil
 }
 
-func (dao *UserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
+func (dao *GormUserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error
 	if err != nil {

@@ -32,8 +32,8 @@ var JWTKey = []byte("6EPTG3HE4W6GX4NLTSGW9LM5EMBGRXZ7")
 type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
-	svc              *service.UserService
-	codeSvc          *service.CodeService
+	svc              service.UserService
+	codeSvc          service.CodeService
 }
 
 func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
@@ -114,8 +114,8 @@ func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignupReq struct {
 		Email           string `json:"email"`
-		Password        string `json:password`
-		ConfirmPassword string `json:confirmPassword`
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirmPassword"`
 	}
 	var req SignupReq
 	if err := ctx.Bind(&req); err != nil {
@@ -166,7 +166,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	type Req struct {
 		Email    string `json:"email"`
-		Password string `json:password`
+		Password string `json:"password"`
 	}
 	var req Req
 	if err := ctx.Bind(&req); err != nil {
@@ -205,7 +205,7 @@ func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
 func (h *UserHandler) Login(ctx *gin.Context) {
 	type Req struct {
 		Email    string `json:"email"`
-		Password string `json:password`
+		Password string `json:"password"`
 	}
 	var req Req
 	if err := ctx.Bind(&req); err != nil {
@@ -295,7 +295,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"code": 0, "msg": "Edit successful"})
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	return &UserHandler{
 		emailRegexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),
