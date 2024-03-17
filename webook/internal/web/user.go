@@ -134,7 +134,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	isPassword, err := h.emailRegexExp.MatchString(req.Email)
+	isPassword, err := h.passwordRegexExp.MatchString(req.Password)
 	if err != nil {
 		ctx.String(http.StatusOK, "timeout")
 		return
