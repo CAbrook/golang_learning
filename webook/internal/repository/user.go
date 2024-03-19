@@ -7,6 +7,7 @@ import (
 	"github.com/CAbrook/golang_learning/internal/repository/cache"
 	"github.com/CAbrook/golang_learning/internal/repository/dao"
 	"log"
+	"time"
 )
 
 var (
@@ -76,6 +77,7 @@ func (repo *CacheUserRepository) toDomain(u dao.User) domain.User {
 		Phone:    u.Phone.String,
 		About:    u.About,
 		Birthday: u.Birthday,
+		Ctime:    time.UnixMilli(u.Ctime),
 	}
 }
 
