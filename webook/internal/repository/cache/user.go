@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// mockgen -package=redismocks -destination=./webook/internal/repository/cache/redismocks/cmd.mock.go github.com/redis/go-redis/v9 Cmdable
 type UserCache interface {
 	Get(ctx context.Context, uid int64) (domain.User, error)
 	Set(ctx context.Context, du domain.User) error
@@ -45,7 +46,7 @@ func (c RedisUserCache) Set(ctx context.Context, du domain.User) error {
 	return c.cmd.Set(ctx, key, data, c.expiration).Err()
 }
 
-func NewUserCache(cmd redis.Cmdable) UserCache {
+func NewUserCache(cmd redis.Cmdable) *RedisUserCache {
 	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,

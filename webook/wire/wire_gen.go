@@ -6,16 +6,16 @@
 
 package wire
 
-import (
-	"github.com/CAbrook/golang_learning/wire/repository"
-	"github.com/CAbrook/golang_learning/wire/repository/dao"
-)
+//import (
+//	"github.com/CAbrook/golang_learning/wire/repository"
+//	"github.com/CAbrook/golang_learning/wire/repository/dao"
+//)
 
 // Injectors from wire.go:
-
-func InitUserRepository() *repository.UserRepository {
-	db := InitDB()
-	userDAO := dao.NewUserDAO(db)
-	userRepository := repository.NewUserRepository(userDAO)
-	return userRepository
-}
+//
+//func InitUserRepository() *repository.UserRepository {
+//	db := InitDB()
+//	userDAO := dao.NewUserDAO(db)
+//	userRepository := repository.NewUserRepository(userDAO)
+//	return userRepository
+//}
