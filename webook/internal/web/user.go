@@ -96,19 +96,17 @@ func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 		return
 	}
 	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
-	if err != nil {
-		switch err {
-		case nil:
-			ctx.JSON(http.StatusOK, Result{
-				Msg: "send success",
-			})
-		case service.ErrCodeSendTooMany:
-			ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "code send too many"})
-		default:
-			ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "os error"})
-		}
-		// todo add log
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, Result{
+			Msg: "send success",
+		})
+	case service.ErrCodeSendTooMany:
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "code send too many"})
+	default:
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "os error"})
 	}
+	// todo add log
 }
 
 func (h *UserHandler) SignUp(ctx *gin.Context) {

@@ -5,7 +5,8 @@ import (
 	"github.com/CAbrook/golang_learning/internal/repository/cache"
 )
 
-var ErrCodeVerifyTooMany = cache.ErrCodeSendTooMany
+var ErrCodeVerifyTooMany = cache.ErrCodeVerifyTooMany
+var ErrCodeSendTooMany = cache.ErrCodeSendTooMany
 
 type CodeRepository interface {
 	Set(ctx context.Context, biz, phone, code string) error

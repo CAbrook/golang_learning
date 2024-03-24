@@ -46,7 +46,7 @@ func (c RedisUserCache) Set(ctx context.Context, du domain.User) error {
 	return c.cmd.Set(ctx, key, data, c.expiration).Err()
 }
 
-func NewUserCache(cmd redis.Cmdable) *RedisUserCache {
+func NewUserCache(cmd redis.Cmdable) UserCache {
 	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,
