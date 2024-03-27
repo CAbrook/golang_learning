@@ -3,6 +3,8 @@ package ioc
 import (
 	"github.com/CAbrook/golang_learning/internal/web"
 	"github.com/CAbrook/golang_learning/internal/web/middlewares"
+	"github.com/CAbrook/golang_learning/pkg/ginx/middleware/ratelimit"
+	"github.com/CAbrook/golang_learning/pkg/limter"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -35,6 +37,6 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 			println("this is my middleware")
 		},
 		(&middlewares.LoginJWTMiddlewareBuilder{}).CheckLogin(),
-		//ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
+		ratelimit.NewBuilder(limter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1)).Build(),
 	}
 }

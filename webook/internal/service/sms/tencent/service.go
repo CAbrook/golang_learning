@@ -30,7 +30,6 @@ func convertToPointerSlice(slice []string) []*string {
 }
 
 func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
-	//TODO implement me
 	request := sms.NewSendSmsRequest()
 	request.SetContext(ctx)
 	request.SmsSdkAppId = s.appId
