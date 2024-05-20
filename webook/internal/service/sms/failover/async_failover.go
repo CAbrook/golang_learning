@@ -97,3 +97,21 @@ func (f *AsyncFailOverSmsService) SendV1(ctx context.Context, tplId string, args
 	f.queue <- req
 	return errors.New("failed to send SMS, saved for retry")
 }
+
+// isRateLimited 检查服务商是否被限流
+func IsRateLimited(svc sms.Service) bool {
+	// 假设服务商提供了一个名为 IsRateLimited 的方法来判断是否限流
+	if rateLimitedSvc, ok := svc.(interface{ IsRateLimited() bool }); ok {
+		return rateLimitedSvc.IsRateLimited()
+	}
+	return false // 如果服务商没有提供 IsRateLimited 方法，默认返回 false
+}
+
+// isServiceDown 检查服务商是否崩溃
+func IsServiceDown(svc sms.Service) bool {
+	// 假设服务商提供了一个名为 IsServiceDown 的方法来判断是否崩溃
+	if downSvc, ok := svc.(interface{ IsServiceDown() bool }); ok {
+		return downSvc.IsServiceDown()
+	}
+	return false // 如果服务商没有提供 IsServiceDown 方法，默认返回 false
+}
